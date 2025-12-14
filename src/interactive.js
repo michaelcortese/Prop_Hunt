@@ -1,6 +1,6 @@
 import * as THREE from '../CS559-Three/build/three.module.js';
 import { loadTextureSafely, createShineShader} from './load_texture.js'
-import { Door, Note } from './objects.js';
+import { Door, Note, SlidingDrawer } from './objects.js';
 
 
 
@@ -148,23 +148,25 @@ export class InteractiveDoor extends Interactable {
 /**
  * Simple sliding drawer
  */
-export class SlidingDrawer extends Interactable {
-  constructor({ width=0.5, height=0.2, depth=0.4, extend=0.35, material }) {
+export class InteractiveDrawer extends Interactable {
+  constructor({ x, y, z, w, h, d, extend=0.35, drawerMat, handleMat, rotationY=0 }) {
     super({ label: 'Drawer', hint: 'Open/Close (E)' });
     this.open = false;
     this.extend = extend;
+    this.position.set(x, y, z);
 
-    const geom = new THREE.BoxGeometry(width, height, depth);
-    this.mesh = new THREE.Mesh(geom, material);
-    this.mesh.castShadow = true; this.mesh.receiveShadow = true;
-    this.add(this.mesh);
-    this.basePos = this.mesh.position.clone();
+    const mesh = new SlidingDrawer({x:0, y:0, z:0, w, h, d, drawerMat, handleMat, rotationY});
+    this.add(mesh);
+    this.drawer = mesh.drawer;
   }
   onInteract() { this.open = !this.open; }
   update(dt) {
-    const target = this.open ? this.extend : 0;
-    const curr = this.mesh.position.z;
-    this.mesh.position.z = THREE.MathUtils.damp(curr, target, 6.0, dt);
+    let target = 0;
+    if(this.open) {
+      target = this.extend;
+    }
+    const curr = this.drawer.position.z;
+    this.drawer.position.z = THREE.MathUtils.damp(curr, target, 6.0, dt);
   }
 }
 

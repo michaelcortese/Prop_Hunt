@@ -1,5 +1,5 @@
 import * as T from '../CS559-Three/build/three.module.js';
-import { InteractiveDoor } from './interactive.js';
+import { InteractiveDoor, InteractiveDrawer } from './interactive.js';
 
 
 
@@ -35,20 +35,15 @@ export function createHouse(w, h, d, t, floorMat, wallMat, frameMat, doorMat, ha
     bedrooms.obstacles.forEach(obj => obstacles.push(obj));
     bedrooms.interactables.forEach(obj => interactables.push(obj));
 
-    const kitchenHallWall = new WallWithPassage({
-        x: 5, y: h/2, z: 7, w: 6, h, t,
-        passageX: 0, passageW: doorW, passageH: doorH,
-        wallMat, rotationY: Math.PI/2
+    
+    const kitchen = createKitchen({
+        x:4, y:0, z:7, 
+        w:6, h:h, d:7,
+        wallT:t, wallMat:wallMat, drawerMat:doorMat, handleMat
     });
-    const kitchenDiningWall = new WallWithPassage({
-        x: 7.5, y: h/2, z: 4, w: 5+t, h, t,
-        passageX: 0, passageW: doorW, passageH: doorH,
-        wallMat, rotationY: 0
-    });
-    house.add(kitchenHallWall);
-    house.add(kitchenDiningWall);
-    obstacles.push(kitchenHallWall);
-    obstacles.push(kitchenDiningWall);
+    kitchen.objects.forEach(obj => house.add(obj));
+    kitchen.obstacles.forEach(obj => obstacles.push(obj));
+    kitchen.interactables.forEach(obj => interactables.push(obj));
 
     // Create Door to the basement
     // const basementDoor = new Door({
@@ -280,6 +275,59 @@ export function createBedroomWalls(h, t, doorW, doorH, wallMat, frameMat, doorMa
 
     return { group, obstacles, interactables };
 }
+
+export function createKitchen({
+  x, y, z, w, h, d,
+  wallT, wallMat, drawerMat, handleMat,
+  doorW = 1.5, doorH = 2.5, rotationY = 0
+}) {
+  const group = new T.Group();
+  let objects = [];
+  let obstacles = [];
+  let interactables = [];
+  let drawers = [];
+
+
+  // --- Walls with passages (relative to group origin) ---
+  const hallPassage = new WallWithPassage({
+    x: x + (-w/2), y: y+h / 2, z: z,
+    w: d, h, t: wallT,
+    passageX: 0, passageW: doorW, passageH: doorH,
+    wallMat, rotationY: Math.PI / 2
+  });
+
+  const diningRoomPassage = new WallWithPassage({
+    x: x, y: y=(h/2), z: z + (-d/2),
+    w: w, h, t: wallT,
+    passageX: 0, passageW: doorW, passageH: doorH,
+    wallMat, rotationY: 0
+  });
+
+  objects.push(hallPassage);
+  objects.push(diningRoomPassage);
+  obstacles.push(hallPassage, diningRoomPassage);
+
+  // --- Drawers along one wall (relative placement) ---
+  const drawerSize = w / 5;
+  for (let i = -1; i < 5; i++) {
+    const drawer = new InteractiveDrawer({
+      x: x + wallT/2 + (i * drawerSize),
+      y: y - drawerSize,
+      z: z + (d-drawerSize) / 2,
+      w: drawerSize, h: drawerSize, d: drawerSize,
+      drawerMat, handleMat, rotationY: Math.PI
+    });
+    objects.push(drawer)
+    drawers.push(drawer);
+    obstacles.push(drawer);
+    interactables.push(drawer);
+  }
+
+  return { objects, obstacles, interactables, drawers };
+}
+
+
+
 
 
 
@@ -578,6 +626,45 @@ export class Cabinet extends T.Group {
     const body = new T.Mesh(new T.BoxGeometry(w, h, d), mat);
     body.position.set(0, h/2, 0);
     this.add(body);
+  }
+}
+
+
+export class SlidingDrawer extends T.Group {
+  constructor({ x, y, z, w, h, d, drawerMat, handleMat, rotationY }) {
+    super();
+
+    // Position the whole drawer group
+    this.position.set(x, y, z);
+    this.rotation.y = rotationY;
+
+    // --- Cabinet body (bottom 2/3) ---
+    const bodyHeight = (2 * h) / 3;
+    const bodyGeom = new T.BoxGeometry(w, bodyHeight, d);
+    const bodyMesh = new T.Mesh(bodyGeom, drawerMat);
+    bodyMesh.position.set(0, -h / 6, 0); // center body in lower part
+    this.add(bodyMesh);
+
+    // --- Drawer (top 1/3) ---
+    const drawerHeight = h / 3;
+    const drawerGeom = new T.BoxGeometry(w, drawerHeight, d);
+    this.drawer = new T.Mesh(drawerGeom, drawerMat);
+    this.drawer.position.set(0, h / 3, 0); // sits on top of body
+    this.add(this.drawer);
+
+    // --- Handle ---
+    const handleRadius = w / 10;
+    const handleLength = d / 10;
+    const handleGeom = new T.CylinderGeometry(handleRadius, handleRadius, handleLength, 16);
+    const handleMesh = new T.Mesh(handleGeom, handleMat);
+
+    // Rotate cylinder to stick out from drawer front
+    handleMesh.rotation.x = Math.PI / 2;
+    handleMesh.position.set(0, 0, d / 2 + handleLength / 2);
+    this.drawer.add(handleMesh);
+
+    // Store references for later animation
+    this.handle = handleMesh;
   }
 }
 

@@ -505,9 +505,12 @@ class Game {
     let closest = null;
     let closestDist = Infinity;
 
-    // Find closest interactable within distance
+    // Find closest interactable within horizontal (x,z) distance
     for (const interactable of this.interactables) {
-      const dist = playerPos.distanceTo(interactable.position);
+      const dx = playerPos.x - interactable.position.x;
+      const dz = playerPos.z - interactable.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz); // only x,z
+
       if (dist < closestDist) {
         closestDist = dist;
         closest = interactable;
@@ -516,17 +519,16 @@ class Game {
 
     if (this.input.interactRequested && closestDist <= CONFIG.interact.distance) {
       this.input.consumeInteract();
-      if(closest instanceof inter_objs.InteractiveNote) {
+      if (closest instanceof inter_objs.InteractiveNote) {
         this.noteInteraction(closest);
-      }
-      else if(closest instanceof inter_objs.InteractiveDoor) {
+      } else {
         closest.onInteract();
       }
-    }
-    else {
+    } else {
       // Float the hint on screen
     }
   }
+
 
   noteInteraction(note) {
     // Show note popup
