@@ -1,6 +1,6 @@
 import * as THREE from '../CS559-Three/build/three.module.js';
 import { loadTextureSafely, createShineShader} from './load_texture.js'
-import { createDoor } from './objects.js';
+import { Door, Note } from './objects.js';
 
 
 
@@ -24,81 +24,60 @@ export class Interactable extends THREE.Group {
 /**
  * Note with password piece
  */
-export class Note extends Interactable {
+// Interactable Note class that extends Interactable and uses NoteObject
+export class InteractiveNote extends Interactable {
   constructor({ passwordPiece, content, material, position, passwordIndex, useShineShader = false }) {
     super({
       label: 'Note',
       hint: 'Read Note (E)',
     });
+    
     this.passwordPiece = passwordPiece; // e.g., "12", "34", "56"
     this.passwordIndex = passwordIndex; // Position in password (0, 1, 2)
     this.content = content || `Password piece: ${passwordPiece}`;
     this.collected = false;
     this.bobOffset = Math.random() * Math.PI * 2; // Random starting phase for animation
+    
+    // Create note using NoteObject class
+    // Position at origin since the parent Interactable handles positioning
+    const noteObject = new Note({
+      x: 0, y: 0, z: 0,
+      material,
+      useShineShader
+    });
+    
+    this.add(noteObject);
+    
+    // Store references to note components
+    this.noteObject = noteObject;
+    this.mesh = noteObject.mesh;
+    this.glow = noteObject.glow;
+    this.collider = noteObject.collider;
+    this.shineMaterial = noteObject.shineMaterial;
+    this.baseMaterial = noteObject.baseMaterial;
     this.useShineShader = useShineShader;
-    this.shineMaterial = null;
-
-    // Create shine shader material if needed
-    if (useShineShader) {
-      this.shineMaterial = createShineShader();
-    }
-
-    // Create a visual representation (paper/note) - make it bigger and vertical so it's easier to see and interact with
-    const geom = new THREE.PlaneGeometry(0.3, 0.4);
-    const noteMaterial = useShineShader ? this.shineMaterial : material;
-    const mesh = new THREE.Mesh(geom, noteMaterial);
-    // Keep it vertical (not flat) so it's easier to see and interact with
-    mesh.rotation.y = Math.PI; // Face forward
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    this.add(mesh);
-    this.mesh = mesh; // Store reference for animation
-    this.baseMaterial = material; // Store base material for switching
-
-    // Add a subtle glow or highlight
-    const glowGeom = new THREE.PlaneGeometry(0.35, 0.45);
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: 0xffffaa,
-      transparent: true,
-      opacity: 0.4,
-      side: THREE.DoubleSide
-    });
-    const glow = new THREE.Mesh(glowGeom, glowMat);
-    glow.rotation.y = Math.PI;
-    glow.position.z = -0.01; // Slightly behind the note
-    this.add(glow);
-    this.glow = glow; // Store reference
-
-    // Add an invisible sphere collider for easier interaction detection
-    const sphereGeom = new THREE.SphereGeometry(0.5, 8, 8);
-    const sphereMat = new THREE.MeshBasicMaterial({
-      visible: false, // Invisible
-      transparent: true,
-      opacity: 0
-    });
-    const sphereCollider = new THREE.Mesh(sphereGeom, sphereMat);
-    this.add(sphereCollider);
-    this.collider = sphereCollider; // Store reference
-
+    
     if (position) {
       this.position.copy(position);
     }
   }
-
+  
   update(dt) {
     if (!this.collected) {
       // Update shine shader time uniform if using shader
       if (this.shineMaterial && this.shineMaterial.uniforms) {
         this.shineMaterial.uniforms.time.value += dt;
       }
-
+      
       // Subtle floating/bobbing animation
       const bobSpeed = 1.5;
       const bobAmount = 0.1;
       this.bobOffset += dt * bobSpeed;
       const bobY = Math.sin(this.bobOffset) * bobAmount;
+      
       this.mesh.position.y = bobY;
       this.glow.position.y = bobY;
+      
       if (this.collider) {
         this.collider.position.y = bobY;
       }
@@ -107,18 +86,11 @@ export class Note extends Interactable {
       this.mesh.rotation.y = Math.PI + Math.sin(this.bobOffset * 0.5) * 0.2;
     }
   }
-
+  
   setShineShader(enabled) {
     if (this.collected) return; // Don't change collected notes
-    
-    if (enabled && !this.shineMaterial) {
-      // Create shine shader
-      this.shineMaterial = createShineShader();
-      this.mesh.material = this.shineMaterial;
-    } else if (!enabled && this.shineMaterial) {
-      // Switch back to base material
-      this.mesh.material = this.baseMaterial;
-    }
+    this.noteObject.setShineShader(enabled);
+    this.shineMaterial = this.noteObject.shineMaterial;
     this.useShineShader = enabled;
   }
 }
@@ -126,31 +98,36 @@ export class Note extends Interactable {
 /**
  * Door that can be opened and closed
  */
-export class HingedDoor extends Interactable {
-  constructor({ x=0, y=0, z=0, width=0.6, height=0.8, depth=0.02, openAngle=Math.PI/2, frameMat, doorMat, handleMat, rotationY=0 }) {
+export class InteractiveDoor extends Interactable {
+  constructor({ x=0, y=0, z=0, w=0.6, h=0.8, t=0.02, openAngle=Math.PI/2, frameMat, doorMat, handleMat, rotationY=0 }) {
     super({
       label: 'Door',
       hint: 'Open/Close (E)',
     });
+    
     this.openAngle = openAngle;
     this.open = false;
     
-    // Set position and rotation
+    // Set position
     this.position.set(x, y, z);
     
-    // Create door using createDoor function
+    // Create door using Door class
     // Position at origin since the parent Interactable handles positioning
-    const doorComponents = createDoor(0, 0, 0, width, height, depth, frameMat, doorMat, handleMat, rotationY);
+    const door = new Door({
+      x: 0, y: 0, z: 0,
+      w: w, h: h, t: t,
+      frameMat, doorMat, handleMat, rotationY
+    });
     
-    this.add(doorComponents.frame);
+    this.add(door);
     
-    this.hing = doorComponents.hing;
-    this.frame = doorComponents.frame;
-
-    this.door = doorComponents.door;
-    this.frameLeft = doorComponents.frameLeft
-    this.frameTop = doorComponents.frameTop;
-    this.frameRight = doorComponents.frameRight;
+    // Store references to door components
+    this.frame = door;
+    this.hinge = door.hinge;
+    this.door = door.door;
+    this.frameLeft = door.frameLeft;
+    this.frameTop = door.frameTop;
+    this.frameRight = door.frameRight;
   }
   
   onInteract() {
@@ -160,11 +137,11 @@ export class HingedDoor extends Interactable {
   update(dt) {
     let target = 0;
     if(this.open) {
-      target = this.openAngle
+      target = this.openAngle;
     }
-    const curr = this.hing.rotation.y;
+    const curr = this.hinge.rotation.y;
     const speed = 4.0;
-    this.hing.rotation.y = THREE.MathUtils.damp(curr, target, speed, dt);
+    this.hinge.rotation.y = THREE.MathUtils.damp(curr, target, speed, dt);
   }
 }
 

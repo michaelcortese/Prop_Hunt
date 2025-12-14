@@ -307,7 +307,7 @@ class Game {
     ];
 
     for (const noteData of notes) {
-      const note = new inter_objs.Note({
+      const note = new inter_objs.InteractiveNote({
         passwordPiece: noteData.passwordPiece,
         passwordIndex: noteData.passwordIndex,
         content: noteData.content,
@@ -516,10 +516,10 @@ class Game {
 
     if (this.input.interactRequested && closestDist <= CONFIG.interact.distance) {
       this.input.consumeInteract();
-      if(closest instanceof inter_objs.Note) {
+      if(closest instanceof inter_objs.InteractiveNote) {
         this.noteInteraction(closest);
       }
-      else if(closest instanceof inter_objs.HingedDoor) {
+      else if(closest instanceof inter_objs.InteractiveDoor) {
         closest.onInteract();
       }
     }

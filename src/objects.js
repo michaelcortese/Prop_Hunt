@@ -1,5 +1,5 @@
 import * as T from '../CS559-Three/build/three.module.js';
-import { HingedDoor } from './interactive.js';
+import { InteractiveDoor } from './interactive.js';
 
 
 
@@ -14,488 +14,572 @@ export function createHouse(w, h, d, t, floorMat, wallMat, frameMat, doorMat, ha
     let interactables = [];
 
     // Create Floor and ceiling
-    const floor = createFloor(w, d, 0.01, floorMat);
-    const ceil = createFloor(w, d, h, floorMat);
-    house.add(floor);
-    house.add(ceil);
-    groundObjs.push(floor);
-    obstacles.push(floor);
+    // const floor = new Floor({ w, d, h: 0.01, mat: floorMat });
+    // const ceil = new Floor({ w, d, h, mat: floorMat });
+    // house.add(floor);
+    // house.add(ceil);
+    // groundObjs.push(floor);
+    // obstacles.push(floor);
 
-    // Create all walls except front
-    const backWall = createWall(0, h/2, -d/2, w, h, t, wallMat);
-    const leftWall = createWall(-w/2, h/2, 0, t, h, d, wallMat);
-    const rightWall = createWall(w/2, h/2, 0, t, h, d, wallMat);
-    house.add(backWall);
-    house.add(leftWall);
-    house.add(rightWall);
-    obstacles.push(backWall);
-    obstacles.push(leftWall);
-    obstacles.push(rightWall);
+    // Build the exterior walls, windows, and doors of the house
+    const exterior = createHouseExterior(w, h, d, t, floorMat, wallMat, frameMat, doorMat, handleMat, windowMat);
+    house.add(exterior.group);
+    exterior.groundObjs.forEach(obj => groundObjs.push(obj));
+    exterior.obstacles.forEach(obj => obstacles.push(obj));
+    exterior.interactables.forEach(obj => interactables.push(obj));
 
-    // const exterior = createHouseExterior(w, h, d, T, floorMat, wallMat, frameMat, doorMat, handleMat, windowMat);
-    // house.add(exterior.group);
-    // exterior.groundObjs.forEach(obj => groundObjs.push(obj));
-    // exterior.obstacles.forEach(obj => obstacles.push(obj));
-    // exterior.interactables.forEach(obj => interactables.push(obj));
-
-    // Create Front door, wall, and windows
-    const frontDoor = createDoor(
-        0, doorH/2 , d/2, doorW, doorH, t, frameMat, doorMat, handleMat, 0
-    );
-    const frontDoorWall = createWall(0, (h+doorH)/2, d/2, doorW, (h-doorH), t, wallMat);
-    const frontLeftWall = createWallWithWindow(
-       (w+doorW)/4, h/2, d/2, (w-doorW)/2, h, t, 
-        1.5, 0.5, 1.2, 1,
-        wallMat, frameMat, windowMat, Math.PI 
-    );
-    const frontRightWall = createWallWithWindow(
-        -(w+doorW)/4, h/2, d/2, (w-doorW)/2, h, t, 
-        -1.5, 0.5, 1.2, 1,
-        wallMat, frameMat, windowMat, Math.PI 
-    );
-    house.add(frontDoor.frame);
-    house.add(frontDoorWall);
-    house.add(frontLeftWall);
-    house.add(frontRightWall);
-    //obstacles.push(frontDoor.frame);
-    obstacles.push(frontLeftWall);
-    obstacles.push(frontRightWall);
-    obstacles.push(frontDoorWall);
-
+    
     // Create Bedroom walls with doors into the rooms
-    const bedroomHallwayWall1 = createWallWithPassage(
-        -2, h/2, 6, 8, h, t,
-        0, doorW, doorH,
-        wallMat, -Math.PI/2
-    );
-    const bedroomDoor1 = new HingedDoor({
-        x:-2, y:doorH/2, z:6, width:doorW, height:doorH, depth:t,
-        frameMat:frameMat, doorMat:doorMat, handleMat:handleMat, rotationY:-Math.PI/2
+    const bedrooms = createBedroomWalls(h, t, doorW, doorH, wallMat, frameMat, doorMat, handleMat);
+    house.add(bedrooms.group);
+    bedrooms.obstacles.forEach(obj => obstacles.push(obj));
+    bedrooms.interactables.forEach(obj => interactables.push(obj));
+
+    const kitchenHallWall = new WallWithPassage({
+        x: 5, y: h/2, z: 7, w: 6, h, t,
+        passageX: 0, passageW: doorW, passageH: doorH,
+        wallMat, rotationY: Math.PI/2
     });
-    house.add(bedroomHallwayWall1);
-    house.add(bedroomDoor1);
-    obstacles.push(bedroomHallwayWall1);
-    obstacles.push(bedroomDoor1);
-    interactables.push(bedroomDoor1);
-
-    const bedroomHallwayWall2 = createWallWithPassage(
-        -2, h/2, -2, 8, h, t,
-        -2, doorW, doorH,
-        wallMat, Math.PI/2
-    );
-    const bedroomDoor2 = new HingedDoor({
-        x:-2, y:doorH/2, z:0, width:doorW, height:doorH, depth:t, frameMat:frameMat,
-        doorMat:doorMat, handleMat:handleMat, rotationY:-Math.PI/2
+    const kitchenDiningWall = new WallWithPassage({
+        x: 7.5, y: h/2, z: 4, w: 5+t, h, t,
+        passageX: 0, passageW: doorW, passageH: doorH,
+        wallMat, rotationY: 0
     });
-    house.add(bedroomHallwayWall2);
-    house.add(bedroomDoor2);
-    obstacles.push(bedroomHallwayWall2);
-    obstacles.push(bedroomDoor2);
-    interactables.push(bedroomDoor2);
-
-    const bedroomHallwayWall3 = createWallWithPassage(
-        -2, h/2, -8, 4, h, t,
-        0, doorW, doorH,
-        wallMat, Math.PI/2
-    );
-    const bedroomDoor3 = new HingedDoor({
-        x:-2, y:doorH/2, z:-8, width:doorW, height:doorH, depth:t, frameMat:frameMat,
-        doorMat:doorMat, handleMat:handleMat, rotationY:-Math.PI/2
-    });
-    house.add(bedroomHallwayWall3);
-    house.add(bedroomDoor3);
-    obstacles.push(bedroomHallwayWall3);
-    obstacles.push(bedroomDoor3);
-    interactables.push(bedroomDoor3);
-
-    // Create walls seperating the bedrooms
-    const bedroomSeperateWall1 = createWall(-6, h/2, 2, 8, h, t, wallMat);
-    const bedroomSeperateWall2 = createWall(-6, h/2, -5, 8, h, t, wallMat);
-    house.add(bedroomSeperateWall1);
-    house.add(bedroomSeperateWall2);
-    obstacles.push(bedroomSeperateWall1);
-    obstacles.push(bedroomSeperateWall2);
-
-
-
-
-    const kitchenHallWall = createWallWithPassage(
-        5, h/2, 7, 6, h, t, 0, doorW, doorH, wallMat, Math.PI/2
-    );
-    const kitchenDiningWall = createWallWithPassage(
-        7.5, h/2, 4, 5+t, h, t, 0, doorW, doorH, wallMat, 0
-    );
     house.add(kitchenHallWall);
     house.add(kitchenDiningWall);
     obstacles.push(kitchenHallWall);
     obstacles.push(kitchenDiningWall);
 
-    
     // Create Door to the basement
-    const basementDoor = createDoor(
-        0, doorH/2, -d/2 - t/2, doorW, doorH, t, frameMat, doorMat
-    );
-    house.add(basementDoor.frame);
-    obstacles.push(basementDoor.door, basementDoor.frameLeft, basementDoor.frameTop, basementDoor.frameRight);
+    // const basementDoor = new Door({
+    //     x: 0, y: doorH/2, z: -d/2 - t/2, w: doorW, h: doorH, t,
+    //     frameMat, doorMat, handleMat, rotationY: 0
+    // });
+    // house.add(basementDoor);
+    // obstacles.push(basementDoor.door, basementDoor.frameLeft, basementDoor.frameTop, basementDoor.frameRight);
 
     return {house, groundObjs, obstacles, interactables};
 }
 
+
 export function createHouseExterior(w, h, d, t, floorMat, wallMat, frameMat, doorMat, handleMat, windowMat) {
     const doorW = 1.5;
     const doorH = Math.min(h, 2.5);
+    const winW = 1.2;
+    const winH = 1.0;
+    const winY = 0.5; // Window center height from ground (middle of wall height)
     
-    // Create Groups
     const group = new T.Group();
+    let obstacles = [];
     let groundObjs = [];
+    let interactables = [];
+        
+    // Compute edges of the house
+    const frontZ = d/2 + t/2;
+    const rightX = w/2 + t/2
+    const backZ = -frontZ;
+    const leftX = -rightX;
+    
+    // Create Front walls, Windows, and Door
+    const frontLeftWindow = new WallWithWindow({
+        x:-6, y:h/2, z:frontZ, w:8, h:h, t:t,
+        winX:0, winY:winY, winW:winW, winH:winH,
+        wallMat:wallMat, frameMat:frameMat, glassMat:windowMat, rotationY:0
+    });
+    const frontDoorWall = new WallWithPassage({
+        x:0, y:h/2, z:frontZ, h:h, w:4, t:t,
+        passageX:0, passageW:doorW, passageH:doorH,
+        wallMat:wallMat, rotationY:0
+    })
+    const frontDoor = new Door({
+        x: 0, y: doorH/2, z: frontZ,
+        w: doorW, h: doorH, t: t,
+        frameMat, doorMat, handleMat, rotationY: 0
+    });
+    const frontCenterWindow = new WallWithWindow({
+        x:4, y:h/2, z:frontZ,
+        w:4, h:h, t:t,
+        winX:0, winY:winY, winW:winW, winH:winH,
+        wallMat:wallMat, frameMat:frameMat, glassMat:windowMat, rotationY: 0
+    });
+    const frontRightWindow = new WallWithWindow({
+        x: 8, y: h/2, z: frontZ,
+        w: 4, h: h, t:t, 
+        winX:0, winY:winY, winW:winW, winH:winH,
+        wallMat:wallMat, frameMat:frameMat, glassMat:windowMat, rotationY: 0
+    });
+    group.add(frontLeftWindow);
+    group.add(frontCenterWindow);
+    group.add(frontDoorWall);
+    group.add(frontDoor);
+    group.add(frontRightWindow);
+    obstacles.push(frontLeftWindow);
+    obstacles.push(frontDoorWall);
+    //TODO UNCOMMENT THIS obstacles.push(frontDoor);
+    obstacles.push(frontCenterWindow);
+    obstacles.push(frontRightWindow);
+
+
+    // Create the Right walls and windows
+    const rightFrontWindow = new WallWithWindow({
+        x: rightX, y: h/2, z: 7, w: 6, h: h, t: t,
+        winX: 1, winY: winY, winW:winW, winH:winH,
+        wallMat:wallMat, frameMat:frameMat, glassMat: windowMat, rotationY: -Math.PI/2
+    });
+    const rightCenterWindow = new WallWithWindow({
+        x: rightX, y: h/2, z: 1, w: 6, h: h, t: t, 
+        winX: 0, winY: winY, winW:winW, winH:winH,
+        wallMat:wallMat, frameMat:frameMat, glassMat: windowMat, rotationY: -Math.PI/2
+    });
+    const rightBackWall = new Wall({
+        x: rightX, y: h/2, z: -6,
+        w: 8, h: h, t: t, mat: wallMat, rotationY: Math.PI/2
+    });
+    group.add(rightFrontWindow);
+    group.add(rightCenterWindow);
+    group.add(rightBackWall);
+    obstacles.push(rightFrontWindow);
+    obstacles.push(rightCenterWindow);    
+    obstacles.push(rightBackWall);
+    
+    // Create the Back Walls and Windows
+    const backRightWall = new Wall({
+        x: 6, y: h/2, z: backZ,
+        w: 8, h: h, t: t,
+        mat: wallMat, rotationY: 0
+    });
+    const backCenterWindow = new WallWithWindow({
+        x: -1, y: h/2, z: backZ,
+        w: 6, h: h, t: t,
+        winX: -1, winY: winY, winW:2*winW, winH:1.5*winH,
+        wallMat, frameMat, glassMat: windowMat, rotationY: Math.PI
+    });
+    const backLeftWindow = new WallWithWindow({
+        x: -7, y: h/2, z: backZ,
+        w: 6, h: h, t: t,
+        winX: 0, winY: winY, winW, winH,
+        wallMat, frameMat, glassMat: windowMat, rotationY: Math.PI
+    });
+    group.add(backRightWall);
+    group.add(backCenterWindow);
+    group.add(backLeftWindow);
+    obstacles.push(backRightWall);
+    obstacles.push(backCenterWindow);
+    obstacles.push(backLeftWindow);
+    
+
+    // Creaet Left Walls and Bedroom Windows
+    const leftBackWindow = new WallWithWindow({
+        x: leftX, y: h/2, z: -7.5,
+        w: 5, h: h, t: t,
+        winX: 0, winY: winY, winW, winH,
+        wallMat, frameMat, glassMat: windowMat, rotationY: -Math.PI/2
+    });
+    const leftCenterWindow = new WallWithWindow({
+        x: leftX, y: h/2, z: -1.5,
+        w: 7, h: h, t: t,
+        winX: 0, winY: winY, winW, winH,
+        wallMat, frameMat, glassMat: windowMat, rotationY: -Math.PI/2
+    });
+    const leftFrontWindow = new WallWithWindow({
+        x: leftX, y: h/2, z: 6,
+        w: 8, h: h, t: t,
+        winX: 0, winY: winY, winW, winH,
+        wallMat, frameMat, glassMat: windowMat, rotationY: -Math.PI/2
+    });
+    group.add(leftBackWindow);
+    group.add(leftCenterWindow);
+    group.add(leftFrontWindow);
+    obstacles.push(leftBackWindow);
+    obstacles.push(leftCenterWindow);
+    obstacles.push(leftFrontWindow);
+    
+    
+    // Exterior ground/foundation
+    const exteriorGround = new Floor({
+        w: w,
+        d: d,
+        h: 0.01,
+        mat: floorMat
+    });
+    group.add(exteriorGround);
+    groundObjs.push(exteriorGround);
+    obstacles.push(exteriorGround);
+    
+    // Roof (simple flat roof for now)
+    const roof = new Floor({
+        w: w,
+        d: d,
+        h: h,
+        mat: wallMat
+    });
+    group.add(roof);
+    obstacles.push(roof);
+    
+    return { group, obstacles, groundObjs, interactables };
+}
+
+export function createBedroomWalls(h, t, doorW, doorH, wallMat, frameMat, doorMat, handleMat) {
+    const group = new T.Group();
     let obstacles = [];
     let interactables = [];
 
-    // Create Floor and ceiling
-    const floor = createFloor(w, d, 0.01, floorMat);
-    const ceil = createFloor(w, d, h, floorMat);
-    group.add(floor);
-    group.add(ceil);
-    groundObjs.push(floor);
-    obstacles.push(floor);
+    // Create Bedroom walls with doors into the rooms
+    const bedroomHallwayWall1 = new WallWithPassage({
+        x: -2, y: h/2, z: 6, w: 8, h, t,
+        passageX: 0, passageW: doorW, passageH: doorH,
+        wallMat, rotationY: -Math.PI/2
+    });
+    const bedroomDoor1 = new InteractiveDoor({
+        x: -2, y: doorH/2, z: 6, w: doorW, h: doorH, t: t,
+        frameMat, doorMat, handleMat, rotationY: -Math.PI/2
+    });
+    group.add(bedroomHallwayWall1);
+    group.add(bedroomDoor1);
+    obstacles.push(bedroomHallwayWall1);
+    obstacles.push(bedroomDoor1);
+    interactables.push(bedroomDoor1);
 
-    // Create front Wall With Windows
-    const frontWall1 = createWallWithWindow(
-        -7, h/2, d/2, 6, h, t, 
-        -1.5, 0.5, 1.2, 1,
-        wallMat, frameMat, windowMat, Math.PI 
-    );
-    const frontWall2 = createWallWithWindow(
-       -2, h/2, d/2, 4, h, t, 
-        1.5, 0.5, 1.2, 1,
-        wallMat, frameMat, windowMat, Math.PI 
-    );
-    const frontWall3 = createWallWithPassage(
-        4, h/2, d/2, 4, h, t, 
-        -2+doorW, doorW, doorH, wallMat
-    );
-    const frontDoor = createDoor(
-        2, doorH/2, d/2, doorW, doorH, t, 
-        frameMat, doorMat, handleMat
-    );
-    const frontWall4 = createWallWithWindow(
-        8, h/2, d/2, 4, h, t, 
-        -1.5, 0.5, 1.2, 1,
-        wallMat, frameMat, windowMat, Math.PI 
-    );
-    group.add(frontWall1);
-    group.add(frontWall2);
-    group.add(frontWall3);
-    group.add(frontDoor);
-    group.add(frontWall4);
-    obstacles.push(frontWall1);
-    obstacles.push(frontWall2);
-    obstacles.push(frontWall3);
-    obstacles.push(frontDoor);
-    obstacles.push(frontWall4);
+    const bedroomHallwayWall2 = new WallWithPassage({
+        x: -2, y: h/2, z: -2, w: 8, h, t,
+        passageX: -2, passageW: doorW, passageH: doorH,
+        wallMat, rotationY: Math.PI/2
+    });
+    const bedroomDoor2 = new InteractiveDoor({
+        x: -2, y: doorH/2, z: 0, w: doorW, h: doorH, t: t,
+        frameMat, doorMat, handleMat, rotationY: -Math.PI/2
+    });
+    group.add(bedroomHallwayWall2);
+    group.add(bedroomDoor2);
+    obstacles.push(bedroomHallwayWall2);
+    obstacles.push(bedroomDoor2);
+    interactables.push(bedroomDoor2);
 
-    return { group, groundObjs, obstacles, interactables };
+    const bedroomHallwayWall3 = new WallWithPassage({
+        x: -2, y: h/2, z: -8, w: 4, h, t,
+        passageX: 0, passageW: doorW, passageH: doorH,
+        wallMat, rotationY: Math.PI/2
+    });
+    const bedroomDoor3 = new InteractiveDoor({
+        x: -2, y: doorH/2, z: -8, w: doorW, h: doorH, t: t,
+        frameMat, doorMat, handleMat, rotationY: -Math.PI/2
+    });
+    group.add(bedroomHallwayWall3);
+    group.add(bedroomDoor3);
+    obstacles.push(bedroomHallwayWall3);
+    obstacles.push(bedroomDoor3);
+    interactables.push(bedroomDoor3);
+
+    // Create walls separating the bedrooms
+    const bedroomSeperateWall1 = new Wall({ x: -6, y: h/2, z: 2, w: 8, h, t: t, mat: wallMat });
+    const bedroomSeperateWall2 = new Wall({ x: -6, y: h/2, z: -5, w: 8, h, t: t, mat: wallMat });
+    group.add(bedroomSeperateWall1);
+    group.add(bedroomSeperateWall2);
+    obstacles.push(bedroomSeperateWall1);
+    obstacles.push(bedroomSeperateWall2);
+
+    return { group, obstacles, interactables };
 }
 
 
-// Helper functions building complex objects with simple objects
 
-// Creates a wall with a window in it
-export function createWallWithWindow(
+
+// Classes for complex objects
+
+export class WallWithWindow extends T.Group {
+  constructor({
     x, y, z, w, h, t,
-    winOffsetX, winOffsetY, winW, winH,
+    winX, winY, winW, winH,
     wallMat, frameMat, glassMat,
     rotationY = 0
-) {
-    const group = new T.Group();
-    group.position.set(x, y, z);
-    group.rotation.y = rotationY;
+  }) {
+    super();
+    this.position.set(x, y, z);
+    this.rotation.y = rotationY;
 
     // Window bounds relative to wall center
-    const winBottom = winOffsetY - winH/2;
-    const winTop    = winOffsetY + winH/2;
-    const winLeft   = winOffsetX - winW/2;
-    const winRight  = winOffsetX + winW/2;
+    const winBottom = winY - winH/2;
+    const winTop    = winY + winH/2;
+    const winLeft   = winX - winW/2;
+    const winRight  = winX + winW/2;
 
     // --- Top wall segment ---
     const topHeight = h/2 - winTop;
     if (topHeight > 0) {
-        const topWall = new T.Mesh(new T.BoxGeometry(w, topHeight, t), wallMat);
-        topWall.position.set(0, winTop + topHeight/2, 0);
-        group.add(topWall);
+      const topWall = new T.Mesh(new T.BoxGeometry(w, topHeight, t), wallMat);
+      topWall.position.set(0, winTop + topHeight/2, 0);
+      this.add(topWall);
     }
 
     // --- Bottom wall segment ---
     const bottomHeight = winBottom - (-h/2);
     if (bottomHeight > 0) {
-        const bottomWall = new T.Mesh(new T.BoxGeometry(w, bottomHeight, t), wallMat);
-        bottomWall.position.set(0, -h/2 + bottomHeight/2, 0);
-        group.add(bottomWall);
+      const bottomWall = new T.Mesh(new T.BoxGeometry(w, bottomHeight, t), wallMat);
+      bottomWall.position.set(0, -h/2 + bottomHeight/2, 0);
+      this.add(bottomWall);
     }
 
     // --- Left wall segment ---
     const leftWidth = winLeft - (-w/2);
     if (leftWidth > 0) {
-        const leftWall = new T.Mesh(new T.BoxGeometry(leftWidth, winH, t), wallMat);
-        leftWall.position.set(-w/2 + leftWidth/2, winOffsetY, 0);
-        group.add(leftWall);
+      const leftWall = new T.Mesh(new T.BoxGeometry(leftWidth, winH, t), wallMat);
+      leftWall.position.set(-w/2 + leftWidth/2, winY, 0);
+      this.add(leftWall);
     }
 
     // --- Right wall segment ---
     const rightWidth = w/2 - winRight;
     if (rightWidth > 0) {
-        const rightWall = new T.Mesh(new T.BoxGeometry(rightWidth, winH, t), wallMat);
-        rightWall.position.set(w/2 - rightWidth/2, winOffsetY, 0);
-        group.add(rightWall);
-    }
+      const rightWall = new T.Mesh(new T.BoxGeometry(rightWidth, winH, t), wallMat);
+      rightWall.position.set(w/2 - rightWidth/2, winY, 0);
+      this.add(rightWall);
+    }WallWithPassage
 
     // --- Window itself ---
-    const window = createWindow(winOffsetX, winOffsetY, 0, winW, winH, t, frameMat, glassMat);
-    group.add(window.window);
-
-    return group;
+    this.window = new Window({
+      x: winX, y: winY, z: 0,
+      w: winW, h: winH, t,
+      frameMat, glassMat
+    });
+    this.add(this.window);
+  }
 }
 
-// Creates a wall with a doorway hole in it
-export function createWallWithPassage(
+export class WallWithPassage extends T.Group {
+  constructor({
     x, y, z, w, h, t,
-    passageOffsetX, passageW, passageH,
+    passageX, passageW, passageH,
     wallMat,
     rotationY = 0
-) {
-    const group = new T.Group();
-    group.position.set(x, y, z);
-    group.rotation.y = rotationY;
+  }) {
+    super();
+    this.position.set(x, y, z);
+    this.rotation.y = rotationY;
 
     // Passage bounds relative to wall center
-    const passLeft  = passageOffsetX - passageW/2;
-    const passRight = passageOffsetX + passageW/2;
-    const passTop   = passageH;
+    const passLeft  = passageX - passageW/2;
+    const passRight = passageX + passageW/2;
 
     // --- Left wall segment ---
     const leftWidth = passLeft - (-w/2);
     if (leftWidth > 0) {
-        const leftWall = new T.Mesh(new T.BoxGeometry(leftWidth, h, t), wallMat);
-        leftWall.position.set(-w/2 + leftWidth/2, 0, 0);
-        leftWall.castShadow = true;
-        leftWall.receiveShadow = true;
-        group.add(leftWall);
+      const leftWall = new T.Mesh(new T.BoxGeometry(leftWidth, h, t), wallMat);
+      leftWall.position.set(-w/2 + leftWidth/2, 0, 0);
+      leftWall.castShadow = true;
+      leftWall.receiveShadow = true;
+      this.add(leftWall);
     }
 
     // --- Right wall segment ---
     const rightWidth = w/2 - passRight;
     if (rightWidth > 0) {
-        const rightWall = new T.Mesh(new T.BoxGeometry(rightWidth, h, t), wallMat);
-        rightWall.position.set(w/2 - rightWidth/2, 0, 0);
-        rightWall.castShadow = true;
-        rightWall.receiveShadow = true;
-        group.add(rightWall);
+      const rightWall = new T.Mesh(new T.BoxGeometry(rightWidth, h, t), wallMat);
+      rightWall.position.set(w/2 - rightWidth/2, 0, 0);
+      rightWall.castShadow = true;
+      rightWall.receiveShadow = true;
+      this.add(rightWall);
     }
 
     // --- Top wall segment (above passage) ---
     const topHeight = h - passageH;
     if (topHeight > 0) {
-        const topWall = new T.Mesh(new T.BoxGeometry(passageW, topHeight, t), wallMat);
-        topWall.position.set(passageOffsetX, passageH + topHeight/2 - h/2, 0);
-        topWall.castShadow = true;
-        topWall.receiveShadow = true;
-        group.add(topWall);
+      const topWall = new T.Mesh(new T.BoxGeometry(passageW, topHeight, t), wallMat);
+      topWall.position.set(passageX, passageH + topHeight/2 - h/2, 0);
+      topWall.castShadow = true;
+      topWall.receiveShadow = true;
+      this.add(topWall);
     }
-
-    return group;
+  }
 }
 
+// Classes for simple objects
 
-
-
-
-
-// Helper function Creating Simple Objects
-
-// Creates a basic wall
-export function createWall(x, y, z, w, h, d, mat) {
-    const wall = new T.Mesh(new T.BoxGeometry(w, h, d), mat);
-    wall.position.set(x, y, z);
-    wall.castShadow = true;
-    wall.receiveShadow = true;
+export class Wall extends T.Group {
+  constructor({ x, y, z, w, h, t, mat, rotationY=0 }) {
+    super();
+    this.position.set(x, y, z);
+    this.rotation.y = rotationY;
     
-    return wall;
-};
-
-// Creates a horizontal plane
-export function createFloor(w, d, h, mat) {
-    // Floor (interior)
-    const floor = new T.Mesh(new T.PlaneGeometry(w, d), mat);
-
-    floor.position.set(0, h, 0);
-
-    floor.rotation.x = -Math.PI/2;
-    floor.material.side = T.DoubleSide; // Render both sides
-    floor.receiveShadow = true;
-
-    return floor;
+    this.mesh = new T.Mesh(new T.BoxGeometry(w, h, t), mat);
+    this.mesh.castShadow = true;
+    this.mesh.receiveShadow = true;
+    this.add(this.mesh);
+  }
 }
 
-// Creates a Door with a frame and handle
-export function createDoor(x, y, z, w, h, t, frameMat, doorMat, handleMat, rotationY) {
-    // Create the Frame of the door
-    const frame = new T.Group();
-    frame.position.set(x, y, z);
-    frame.rotation.y = rotationY;
+export class Floor extends T.Group {
+  constructor({ w, d, h, mat }) {
+    super();
+    this.position.set(0, h, 0);
     
+    this.mesh = new T.Mesh(new T.PlaneGeometry(w, d), mat);
+    this.mesh.rotation.x = -Math.PI/2;
+    this.mesh.material.side = T.DoubleSide;
+    this.mesh.receiveShadow = true;
+    this.add(this.mesh);
+  }
+}
 
-    const frameTop = new T.Mesh(new T.BoxGeometry(w, t, t), frameMat);
-    frameTop.position.set(0, (h-t)/2, 0);
-    frameTop.castShadow = true;
-    frameTop.receiveShadow = true;
-    frame.add(frameTop);
+export class Door extends T.Group {
+  constructor({ x, y, z, w, h, t, frameMat, doorMat, handleMat, rotationY = 0 }) {
+    super();
+    this.position.set(x, y, z);
+    this.rotation.y = rotationY;
 
-    const frameLeft = new T.Mesh(new T.BoxGeometry(t, h, t), frameMat);
-    frameLeft.position.set((-w + t)/2, 0, 0);
-    frameLeft.castShadow = true;
-    frameLeft.receiveShadow = true;
-    frame.add(frameLeft);
+    // Frame top
+    this.frameTop = new T.Mesh(new T.BoxGeometry(w, t, t), frameMat);
+    this.frameTop.position.set(0, (h-t)/2, 0);
+    this.frameTop.castShadow = true;
+    this.frameTop.receiveShadow = true;
+    this.add(this.frameTop);
 
-    const frameRight = new T.Mesh(new T.BoxGeometry(t, h, t), frameMat);
-    frameRight.position.set((w - t)/2, 0, 0);
-    frameRight.castShadow = true;
-    frameRight.receiveShadow = true;
-    frame.add(frameRight);
+    // Frame left
+    this.frameLeft = new T.Mesh(new T.BoxGeometry(t, h, t), frameMat);
+    this.frameLeft.position.set((-w + t)/2, 0, 0);
+    this.frameLeft.castShadow = true;
+    this.frameLeft.receiveShadow = true;
+    this.add(this.frameLeft);
 
-    // Create the door for the frame
-    const hing = new T.Object3D();
-    const door = new T.Mesh(new T.BoxGeometry(w - 2*t, h-t, t), doorMat);
-    hing.position.set(-(w-t)/2, 0, 0);
-    door.position.set((w-t)/2, -t/2, 0);
-    door.castShadow = true;
-    door.receiveShadow = true;
-    hing.add(door);
-    frame.add(hing);
+    // Frame right
+    this.frameRight = new T.Mesh(new T.BoxGeometry(t, h, t), frameMat);
+    this.frameRight.position.set((w - t)/2, 0, 0);
+    this.frameRight.castShadow = true;
+    this.frameRight.receiveShadow = true;
+    this.add(this.frameRight);
 
-    // Create a handle for each side of the door
+    // Door with hinge
+    this.hinge = new T.Object3D();
+    this.door = new T.Mesh(new T.BoxGeometry(w - 2*t, h-t, t), doorMat);
+    this.hinge.position.set(-(w-t)/2, 0, 0);
+    this.door.position.set((w-t)/2, -t/2, 0);
+    this.door.castShadow = true;
+    this.door.receiveShadow = true;
+    this.hinge.add(this.door);
+    this.add(this.hinge);
+
+    // Handles
     const frontHandle = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, 0.15, 16), handleMat);
-    frontHandle.rotation.x = Math.PI / 2; // Lay it horizontally
+    frontHandle.rotation.x = Math.PI / 2;
     frontHandle.position.set(3*w/4, 0, t/2);
-    hing.add(frontHandle);
+    this.hinge.add(frontHandle);
 
     const backHandle = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, 0.15, 16), handleMat);
-    backHandle.rotation.x = -Math.PI / 2; // Lay it horizontally
+    backHandle.rotation.x = -Math.PI / 2;
     backHandle.position.set(3*w/4, 0, -t/2);
-    hing.add(backHandle);
-
-    return { frame, door, frameLeft, frameTop, frameRight, hing };
+    this.hinge.add(backHandle);
+  }
 }
 
-// Creates a window with a frame
-export function createWindow(x, y, z, w, h, t, frameMat, glassMat, rotationY=0) {
-    const window = new T.Group();
-    window.position.set(x, y, z);
-    window.rotation.y = rotationY;
+export class Window extends T.Group {
+  constructor({ x, y, z, w, h, t, frameMat, glassMat, rotationY = 0 }) {
+    super();
+    this.position.set(x, y, z);
+    this.rotation.y = rotationY;
 
-    // Window frame
-    const frameTop = new T.Mesh(new T.BoxGeometry(w-t, t, t), frameMat);
-    frameTop.position.set(0, (h-t)/2, 0);
-    frameTop.castShadow = true;
-    frameTop.receiveShadow = true;
-    window.add(frameTop);
+    // Frame top
+    this.frameTop = new T.Mesh(new T.BoxGeometry(w-t, t, t), frameMat);
+    this.frameTop.position.set(0, (h-t)/2, 0);
+    this.frameTop.castShadow = true;
+    this.frameTop.receiveShadow = true;
+    this.add(this.frameTop);
 
-    const frameBottom = new T.Mesh(new T.BoxGeometry(w-t, t, t), frameMat);
-    frameBottom.position.set(0, (-h+t)/2, 0);
-    frameBottom.castShadow = true;
-    frameBottom.receiveShadow = true;
-    window.add(frameBottom);
+    // Frame bottom
+    this.frameBottom = new T.Mesh(new T.BoxGeometry(w-t, t, t), frameMat);
+    this.frameBottom.position.set(0, (-h+t)/2, 0);
+    this.frameBottom.castShadow = true;
+    this.frameBottom.receiveShadow = true;
+    this.add(this.frameBottom);
 
-    const frameLeft = new T.Mesh(new T.BoxGeometry(t, h, t), frameMat);
-    frameLeft.position.set((-w+t)/2, 0, 0);
-    frameLeft.castShadow = true;
-    frameLeft.receiveShadow = true;
-    window.add(frameLeft);
+    // Frame left
+    this.frameLeft = new T.Mesh(new T.BoxGeometry(t, h, t), frameMat);
+    this.frameLeft.position.set((-w+t)/2, 0, 0);
+    this.frameLeft.castShadow = true;
+    this.frameLeft.receiveShadow = true;
+    this.add(this.frameLeft);
 
-    const frameRight = new T.Mesh(new T.BoxGeometry(t, h, t), frameMat);
-    frameRight.position.set((w-t)/2, 0, 0);
-    frameRight.castShadow = true;
-    frameRight.receiveShadow = true;
-    window.add(frameRight);
+    // Frame right
+    this.frameRight = new T.Mesh(new T.BoxGeometry(t, h, t), frameMat);
+    this.frameRight.position.set((w-t)/2, 0, 0);
+    this.frameRight.castShadow = true;
+    this.frameRight.receiveShadow = true;
+    this.add(this.frameRight);
 
-    // Window glass
-    const glass = new T.Mesh(new T.PlaneGeometry(w, h), glassMat);
-    glass.position.z = 0.05;
-    window.add(glass);
-
-    return {window, frameBottom, frameLeft, frameTop, frameRight, glass };
+    // Glass
+    this.glass = new T.Mesh(new T.PlaneGeometry(w, h), glassMat);
+    this.glass.material.side = T.DoubleSide;
+    this.glass.position.z = 0.05;
+    this.add(this.glass);
+  }
 }
 
-export function createBookshelf(x, y, z, w, h, d, mat) {
-    const shelf = new T.Group();
-    shelf.position.set(x, y, z);
+export class Bookshelf extends T.Group {
+  constructor({ x, y, z, w, h, d, mat }) {
+    super();
+    this.position.set(x, y, z);
 
     const back = new T.Mesh(new T.BoxGeometry(0.1, h, d), mat);
     back.position.set(0, h/2, 0);
-    shelf.add(back);
+    this.add(back);
 
     const shelfCount = 4;
     for (let i = 0; i < shelfCount; i++) {
-        const board = new T.Mesh(new T.BoxGeometry(w, 0.05, d), mat);
-        board.position.set(0, (i + 1) * (h / (shelfCount + 1)), 0);
-        shelf.add(board);
+      const board = new T.Mesh(new T.BoxGeometry(w, 0.05, d), mat);
+      board.position.set(0, (i + 1) * (h / (shelfCount + 1)), 0);
+      this.add(board);
     }
-
-    return shelf;
+  }
 }
 
-export function createTable(x, y, z, w, h, d, mat) {
-    const table = new T.Group();
-    table.position.set(x, y, z);
+export class Table extends T.Group {
+  constructor({ x, y, z, w, h, d, mat }) {
+    super();
+    this.position.set(x, y, z);
 
     const top = new T.Mesh(new T.BoxGeometry(w, 0.05, d), mat);
     top.position.set(0, h, 0);
-    table.add(top);
+    this.add(top);
 
     const legGeo = new T.BoxGeometry(0.05, h, 0.05);
-
     const legPositions = [
-        [-w/2 + 0.1, h/2, -d/2 + 0.1],
-        [ w/2 - 0.1, h/2, -d/2 + 0.1],
-        [-w/2 + 0.1, h/2,  d/2 - 0.1],
-        [ w/2 - 0.1, h/2,  d/2 - 0.1],
+      [-w/2 + 0.1, h/2, -d/2 + 0.1],
+      [ w/2 - 0.1, h/2, -d/2 + 0.1],
+      [-w/2 + 0.1, h/2,  d/2 - 0.1],
+      [ w/2 - 0.1, h/2,  d/2 - 0.1],
     ];
 
     for (const [lx, ly, lz] of legPositions) {
-        const leg = new T.Mesh(legGeo, mat);
-        leg.position.set(lx, ly, lz);
-        table.add(leg);
+      const leg = new T.Mesh(legGeo, mat);
+      leg.position.set(lx, ly, lz);
+      this.add(leg);
     }
-
-    return table;
+  }
 }
 
-export function createCouch(x, y, z, w, h, d, mat) {
-    const couch = new T.Group();
-    couch.position.set(x, y, z);
+export class Couch extends T.Group {
+  constructor({ x, y, z, w, h, d, mat }) {
+    super();
+    this.position.set(x, y, z);
 
     const base = new T.Mesh(new T.BoxGeometry(w, h/2, d), mat);
     base.position.set(0, h/4, 0);
-    couch.add(base);
+    this.add(base);
 
     const back = new T.Mesh(new T.BoxGeometry(w, h/2, 0.1), mat);
     back.position.set(0, h*0.75, -d/2 + 0.05);
-    couch.add(back);
-
-    return couch;
+    this.add(back);
+  }
 }
 
-export function createCabinet(x, y, z, w, h, d, mat) {
-    const cab = new T.Group();
-    cab.position.set(x, y, z);
+export class Cabinet extends T.Group {
+  constructor({ x, y, z, w, h, d, mat }) {
+    super();
+    this.position.set(x, y, z);
 
     const body = new T.Mesh(new T.BoxGeometry(w, h, d), mat);
     body.position.set(0, h/2, 0);
-    cab.add(body);
-
-    return cab;
+    this.add(body);
+  }
 }
-
-
 
 /**
  * The giant eye that peers through windows
@@ -584,6 +668,70 @@ export class GiantEye extends T.Group {
       }
     }
     return null;
+  }
+}
+
+// Base Note class that extends THREE.Group
+export class Note extends T.Group {
+  constructor({ x = 0, y = 0, z = 0, material, useShineShader = false }) {
+    super();
+    
+    this.position.set(x, y, z);
+    this.useShineShader = useShineShader;
+    this.shineMaterial = null;
+    
+    // Create shine shader material if needed
+    if (useShineShader) {
+      this.shineMaterial = createShineShader();
+    }
+    
+    // Create a visual representation (paper/note) - make it bigger and vertical
+    const geom = new T.PlaneGeometry(0.3, 0.4);
+    const noteMaterial = useShineShader ? this.shineMaterial : material;
+    this.mesh = new T.Mesh(geom, noteMaterial);
+    
+    // Keep it vertical (not flat) so it's easier to see and interact with
+    this.mesh.rotation.y = Math.PI; // Face forward
+    this.mesh.castShadow = true;
+    this.mesh.receiveShadow = true;
+    this.add(this.mesh);
+    
+    this.baseMaterial = material; // Store base material for switching
+    
+    // Add a subtle glow or highlight
+    const glowGeom = new T.PlaneGeometry(0.35, 0.45);
+    const glowMat = new T.MeshBasicMaterial({
+      color: 0xffffaa,
+      transparent: true,
+      opacity: 0.4,
+      side: T.DoubleSide
+    });
+    this.glow = new T.Mesh(glowGeom, glowMat);
+    this.glow.rotation.y = Math.PI;
+    this.glow.position.z = -0.01; // Slightly behind the note
+    this.add(this.glow);
+    
+    // Add an invisible sphere collider for easier interaction detection
+    const sphereGeom = new T.SphereGeometry(0.5, 8, 8);
+    const sphereMat = new T.MeshBasicMaterial({
+      visible: false, // Invisible
+      transparent: true,
+      opacity: 0
+    });
+    this.collider = new T.Mesh(sphereGeom, sphereMat);
+    this.add(this.collider);
+  }
+  
+  setShineShader(enabled) {
+    if (enabled && !this.shineMaterial) {
+      // Create shine shader
+      this.shineMaterial = createShineShader();
+      this.mesh.material = this.shineMaterial;
+    } else if (!enabled && this.shineMaterial) {
+      // Switch back to base material
+      this.mesh.material = this.baseMaterial;
+    }
+    this.useShineShader = enabled;
   }
 }
 
