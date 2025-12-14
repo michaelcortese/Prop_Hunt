@@ -32,15 +32,16 @@ export function createHouse(w, h, d, t, floorMat, wallMat, frameMat, doorMat, ha
     obstacles.push(leftWall);
     obstacles.push(rightWall);
 
+    // const exterior = createHouseExterior(w, h, d, T, floorMat, wallMat, frameMat, doorMat, handleMat, windowMat);
+    // house.add(exterior.group);
+    // exterior.groundObjs.forEach(obj => groundObjs.push(obj));
+    // exterior.obstacles.forEach(obj => obstacles.push(obj));
+    // exterior.interactables.forEach(obj => interactables.push(obj));
+
     // Create Front door, wall, and windows
-    const frontDoor = new HingedDoor({
-        x:0, y:doorH/2, z:d/2, width:doorW, height:doorH, depth:t, frameMat:frameMat,
-        doorMat:doorMat, handleMat:handleMat
-    })
-    // const frontDoor = createDoor(
-    //     0, doorH/2 , d/2, doorW, doorH, t, frameMat, doorMat
-    // );
-     
+    const frontDoor = createDoor(
+        0, doorH/2 , d/2, doorW, doorH, t, frameMat, doorMat, handleMat, 0
+    );
     const frontDoorWall = createWall(0, (h+doorH)/2, d/2, doorW, (h-doorH), t, wallMat);
     const frontLeftWall = createWallWithWindow(
        (w+doorW)/4, h/2, d/2, (w-doorW)/2, h, t, 
@@ -52,27 +53,82 @@ export function createHouse(w, h, d, t, floorMat, wallMat, frameMat, doorMat, ha
         -1.5, 0.5, 1.2, 1,
         wallMat, frameMat, windowMat, Math.PI 
     );
-    house.add(frontDoor);
+    house.add(frontDoor.frame);
     house.add(frontDoorWall);
     house.add(frontLeftWall);
     house.add(frontRightWall);
-    interactables.push(frontDoor);
+    //obstacles.push(frontDoor.frame);
     obstacles.push(frontLeftWall);
     obstacles.push(frontRightWall);
-    obstacles.push(frontDoor);    
     obstacles.push(frontDoorWall);
 
-    // Create a living room at the front of the house
+    // Create Bedroom walls with doors into the rooms
+    const bedroomHallwayWall1 = createWallWithPassage(
+        -2, h/2, 6, 8, h, t,
+        0, doorW, doorH,
+        wallMat, -Math.PI/2
+    );
+    const bedroomDoor1 = new HingedDoor({
+        x:-2, y:doorH/2, z:6, width:doorW, height:doorH, depth:t,
+        frameMat:frameMat, doorMat:doorMat, handleMat:handleMat, rotationY:-Math.PI/2
+    });
+    house.add(bedroomHallwayWall1);
+    house.add(bedroomDoor1);
+    obstacles.push(bedroomHallwayWall1);
+    obstacles.push(bedroomDoor1);
+    interactables.push(bedroomDoor1);
 
-    // Create internal walls to build rooms
+    const bedroomHallwayWall2 = createWallWithPassage(
+        -2, h/2, -2, 8, h, t,
+        -2, doorW, doorH,
+        wallMat, Math.PI/2
+    );
+    const bedroomDoor2 = new HingedDoor({
+        x:-2, y:doorH/2, z:0, width:doorW, height:doorH, depth:t, frameMat:frameMat,
+        doorMat:doorMat, handleMat:handleMat, rotationY:-Math.PI/2
+    });
+    house.add(bedroomHallwayWall2);
+    house.add(bedroomDoor2);
+    obstacles.push(bedroomHallwayWall2);
+    obstacles.push(bedroomDoor2);
+    interactables.push(bedroomDoor2);
+
+    const bedroomHallwayWall3 = createWallWithPassage(
+        -2, h/2, -8, 4, h, t,
+        0, doorW, doorH,
+        wallMat, Math.PI/2
+    );
+    const bedroomDoor3 = new HingedDoor({
+        x:-2, y:doorH/2, z:-8, width:doorW, height:doorH, depth:t, frameMat:frameMat,
+        doorMat:doorMat, handleMat:handleMat, rotationY:-Math.PI/2
+    });
+    house.add(bedroomHallwayWall3);
+    house.add(bedroomDoor3);
+    obstacles.push(bedroomHallwayWall3);
+    obstacles.push(bedroomDoor3);
+    interactables.push(bedroomDoor3);
+
+    // Create walls seperating the bedrooms
+    const bedroomSeperateWall1 = createWall(-6, h/2, 2, 8, h, t, wallMat);
+    const bedroomSeperateWall2 = createWall(-6, h/2, -5, 8, h, t, wallMat);
+    house.add(bedroomSeperateWall1);
+    house.add(bedroomSeperateWall2);
+    obstacles.push(bedroomSeperateWall1);
+    obstacles.push(bedroomSeperateWall2);
+
+
+
+
     const kitchenHallWall = createWallWithPassage(
-        5, h/2, 7+t/2, 7.5-t, h, t, 1, doorW, doorH, wallMat, -Math.PI/2
+        5, h/2, 7, 6, h, t, 0, doorW, doorH, wallMat, Math.PI/2
     );
     const kitchenDiningWall = createWallWithPassage(
-        8, h/2, 3.5, 6, h, t, 0, doorW, doorH, wallMat, 0
+        7.5, h/2, 4, 5+t, h, t, 0, doorW, doorH, wallMat, 0
     );
     house.add(kitchenHallWall);
     house.add(kitchenDiningWall);
+    obstacles.push(kitchenHallWall);
+    obstacles.push(kitchenDiningWall);
 
     
     // Create Door to the basement
@@ -83,6 +139,62 @@ export function createHouse(w, h, d, t, floorMat, wallMat, frameMat, doorMat, ha
     obstacles.push(basementDoor.door, basementDoor.frameLeft, basementDoor.frameTop, basementDoor.frameRight);
 
     return {house, groundObjs, obstacles, interactables};
+}
+
+export function createHouseExterior(w, h, d, t, floorMat, wallMat, frameMat, doorMat, handleMat, windowMat) {
+    const doorW = 1.5;
+    const doorH = Math.min(h, 2.5);
+    
+    // Create Groups
+    const group = new T.Group();
+    let groundObjs = [];
+    let obstacles = [];
+    let interactables = [];
+
+    // Create Floor and ceiling
+    const floor = createFloor(w, d, 0.01, floorMat);
+    const ceil = createFloor(w, d, h, floorMat);
+    group.add(floor);
+    group.add(ceil);
+    groundObjs.push(floor);
+    obstacles.push(floor);
+
+    // Create front Wall With Windows
+    const frontWall1 = createWallWithWindow(
+        -7, h/2, d/2, 6, h, t, 
+        -1.5, 0.5, 1.2, 1,
+        wallMat, frameMat, windowMat, Math.PI 
+    );
+    const frontWall2 = createWallWithWindow(
+       -2, h/2, d/2, 4, h, t, 
+        1.5, 0.5, 1.2, 1,
+        wallMat, frameMat, windowMat, Math.PI 
+    );
+    const frontWall3 = createWallWithPassage(
+        4, h/2, d/2, 4, h, t, 
+        -2+doorW, doorW, doorH, wallMat
+    );
+    const frontDoor = createDoor(
+        2, doorH/2, d/2, doorW, doorH, t, 
+        frameMat, doorMat, handleMat
+    );
+    const frontWall4 = createWallWithWindow(
+        8, h/2, d/2, 4, h, t, 
+        -1.5, 0.5, 1.2, 1,
+        wallMat, frameMat, windowMat, Math.PI 
+    );
+    group.add(frontWall1);
+    group.add(frontWall2);
+    group.add(frontWall3);
+    group.add(frontDoor);
+    group.add(frontWall4);
+    obstacles.push(frontWall1);
+    obstacles.push(frontWall2);
+    obstacles.push(frontWall3);
+    obstacles.push(frontDoor);
+    obstacles.push(frontWall4);
+
+    return { group, groundObjs, obstacles, interactables };
 }
 
 
@@ -197,6 +309,7 @@ export function createWallWithPassage(
 
 
 
+
 // Helper function Creating Simple Objects
 
 // Creates a basic wall
@@ -228,6 +341,7 @@ export function createDoor(x, y, z, w, h, t, frameMat, doorMat, handleMat, rotat
     // Create the Frame of the door
     const frame = new T.Group();
     frame.position.set(x, y, z);
+    frame.rotation.y = rotationY;
     
 
     const frameTop = new T.Mesh(new T.BoxGeometry(w, t, t), frameMat);
@@ -379,6 +493,98 @@ export function createCabinet(x, y, z, w, h, d, mat) {
     cab.add(body);
 
     return cab;
+}
+
+
+
+/**
+ * The giant eye that peers through windows
+ */
+export class GiantEye extends T.Group {
+  constructor({ texture, houseWindows, scene, getPlayerPos, getPlayerDir }) {
+    super();
+    this.houseWindows = houseWindows;
+    this.scene = scene;
+    this.getPlayerPos = getPlayerPos;
+    this.getPlayerDir = getPlayerDir;
+    this.visibleNow = false;
+    this.timer = 0;
+    this.nextPeek = this.randomInterval();
+    this.peekDuration = CONFIG.eye.visibleDuration;
+
+    const geom = new T.SphereGeometry(0.6, 32, 32);
+    const mat = new T.MeshPhongMaterial({
+      map: texture,
+      color: 0xffffff,
+      shininess: 30,
+    });
+    this.mesh = new T.Mesh(geom, mat);
+    this.add(this.mesh);
+
+    // Start off-scene
+    this.position.set(0, 100, 0);
+    scene.add(this);
+  }
+
+  randomInterval() {
+    return CONFIG.eye.intervalMin + Math.random()*(CONFIG.eye.intervalMax - CONFIG.eye.intervalMin);
+  }
+
+  chooseWindow() {
+    return this.houseWindows[Math.floor(Math.random()*this.houseWindows.length)];
+  }
+
+  update(dt, obstacles) {
+    this.timer += dt;
+
+    if (!this.visibleNow && this.timer > this.nextPeek) {
+      // Start peeking
+      this.timer = 0;
+      this.visibleNow = true;
+      this.windowTarget = this.chooseWindow();
+
+      const lookPos = this.windowTarget.position.clone();
+      lookPos.y += 1.1;
+      const outward = new T.Vector3(0, 0, -1).applyQuaternion(this.windowTarget.quaternion);
+      const eyePos = lookPos.clone().add(outward.multiplyScalar(1.4)); // just outside window
+      this.position.copy(eyePos);
+      this.mesh.lookAt(lookPos);
+    }
+
+    if (this.visibleNow) {
+      // Gently sway
+      this.rotation.y += dt*0.2;
+
+      // Vision check (lose condition)
+      const playerPos = this.getPlayerPos();
+      const toPlayer = new T.Vector3().subVectors(playerPos, this.position);
+      const dist = toPlayer.length();
+      if (dist < CONFIG.eye.sightDistance) {
+        const dir = toPlayer.normalize();
+        const eyeForward = new T.Vector3(0,0,1).applyQuaternion(this.mesh.quaternion);
+        const angle = Math.acos(T.MathUtils.clamp(eyeForward.dot(dir), -1, 1));
+        if (angle < CONFIG.eye.fov) {
+          // Check line of sight (ray no obstacles)
+          const ray = new T.Raycaster(this.position, dir, 0, dist);
+          const hits = ray.intersectObjects(obstacles, true);
+          const blocked = hits.length > 0;
+          if (!blocked) {
+            // Player is spotted -> game over
+            return 'spotted';
+          }
+        }
+      }
+
+      if (this.timer > this.peekDuration) {
+        // End peeking
+        this.timer = 0;
+        this.visibleNow = false;
+        this.nextPeek = this.randomInterval();
+        this.position.set(0, 100, 0);
+      }
+    }
+    return null;
+  }
 }
 
 

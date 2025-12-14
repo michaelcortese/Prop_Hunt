@@ -1,9 +1,9 @@
 import * as T from '../CS559-Three/build/three.module.js';
 import { loadTextureSafely, createShineShader } from './load_texture.js';
 import { Input } from './input_manager.js';
-import { Interactable, Note, HingedDoor, SlidingDrawer, Paper, Lock, GiantEye } from './interactive.js';
+import * as inter_objs from './interactive.js';
 import { createDirectionalLight, createPointLight } from './light.js';
-import * as objects from './objects.js';
+import * as objs from './objects.js';
 
 
 // Print Async Error messages to the console
@@ -224,7 +224,7 @@ class Game {
 
 
     // Build the basic pieces of a house
-    const house_pieces = objects.createHouse(
+    const house_pieces = objs.createHouse(
       houseWidth, houseHeight, houseDepth, wallThickness,
       floorMat, wallMat, frameMat, doorMat, frameMat, windowMat
     );
@@ -307,7 +307,7 @@ class Game {
     ];
 
     for (const noteData of notes) {
-      const note = new Note({
+      const note = new inter_objs.Note({
         passwordPiece: noteData.passwordPiece,
         passwordIndex: noteData.passwordIndex,
         content: noteData.content,
@@ -319,8 +319,6 @@ class Game {
       this.interactables.push(note);
       this.updateables.push(note); // Add to updateables for animation
     }
-
-    alert("Notes Created");
   }
 
   checkGrounded() {
@@ -518,10 +516,10 @@ class Game {
 
     if (this.input.interactRequested && closestDist <= CONFIG.interact.distance) {
       this.input.consumeInteract();
-      if(closest instanceof Note) {
+      if(closest instanceof inter_objs.Note) {
         this.noteInteraction(closest);
       }
-      else if(closest instanceof HingedDoor) {
+      else if(closest instanceof inter_objs.HingedDoor) {
         closest.onInteract();
       }
     }

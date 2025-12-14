@@ -14,6 +14,10 @@ export class Interactable extends THREE.Group {
     this.label = label || 'Interactable';
     this.hint = hint;
   }
+
+  onInteract() {
+    console.log("Default Interact Not Overridden");
+  }
 }
 
 
@@ -123,7 +127,7 @@ export class Note extends Interactable {
  * Door that can be opened and closed
  */
 export class HingedDoor extends Interactable {
-  constructor({ x=0, y=0, z=0, width=0.6, height=0.8, depth=0.02, openAngle=Math.PI/2, pivotSide='left', frameMat, doorMat, handleMat, rotationY=0 }) {
+  constructor({ x=0, y=0, z=0, width=0.6, height=0.8, depth=0.02, openAngle=Math.PI/2, frameMat, doorMat, handleMat, rotationY=0 }) {
     super({
       label: 'Door',
       hint: 'Open/Close (E)',
@@ -226,93 +230,5 @@ export class Lock extends Interactable {
   }
 }
 
-/**
- * The giant eye that peers through windows
- */
-export class GiantEye extends THREE.Group {
-  constructor({ texture, houseWindows, scene, getPlayerPos, getPlayerDir }) {
-    super();
-    this.houseWindows = houseWindows;
-    this.scene = scene;
-    this.getPlayerPos = getPlayerPos;
-    this.getPlayerDir = getPlayerDir;
-    this.visibleNow = false;
-    this.timer = 0;
-    this.nextPeek = this.randomInterval();
-    this.peekDuration = CONFIG.eye.visibleDuration;
 
-    const geom = new THREE.SphereGeometry(0.6, 32, 32);
-    const mat = new THREE.MeshPhongMaterial({
-      map: texture,
-      color: 0xffffff,
-      shininess: 30,
-    });
-    this.mesh = new THREE.Mesh(geom, mat);
-    this.add(this.mesh);
-
-    // Start off-scene
-    this.position.set(0, 100, 0);
-    scene.add(this);
-  }
-
-  randomInterval() {
-    return CONFIG.eye.intervalMin + Math.random()*(CONFIG.eye.intervalMax - CONFIG.eye.intervalMin);
-  }
-
-  chooseWindow() {
-    return this.houseWindows[Math.floor(Math.random()*this.houseWindows.length)];
-  }
-
-  update(dt, obstacles) {
-    this.timer += dt;
-
-    if (!this.visibleNow && this.timer > this.nextPeek) {
-      // Start peeking
-      this.timer = 0;
-      this.visibleNow = true;
-      this.windowTarget = this.chooseWindow();
-
-      const lookPos = this.windowTarget.position.clone();
-      lookPos.y += 1.1;
-      const outward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.windowTarget.quaternion);
-      const eyePos = lookPos.clone().add(outward.multiplyScalar(1.4)); // just outside window
-      this.position.copy(eyePos);
-      this.mesh.lookAt(lookPos);
-    }
-
-    if (this.visibleNow) {
-      // Gently sway
-      this.rotation.y += dt*0.2;
-
-      // Vision check (lose condition)
-      const playerPos = this.getPlayerPos();
-      const toPlayer = new THREE.Vector3().subVectors(playerPos, this.position);
-      const dist = toPlayer.length();
-      if (dist < CONFIG.eye.sightDistance) {
-        const dir = toPlayer.normalize();
-        const eyeForward = new THREE.Vector3(0,0,1).applyQuaternion(this.mesh.quaternion);
-        const angle = Math.acos(THREE.MathUtils.clamp(eyeForward.dot(dir), -1, 1));
-        if (angle < CONFIG.eye.fov) {
-          // Check line of sight (ray no obstacles)
-          const ray = new THREE.Raycaster(this.position, dir, 0, dist);
-          const hits = ray.intersectObjects(obstacles, true);
-          const blocked = hits.length > 0;
-          if (!blocked) {
-            // Player is spotted -> game over
-            return 'spotted';
-          }
-        }
-      }
-
-      if (this.timer > this.peekDuration) {
-        // End peeking
-        this.timer = 0;
-        this.visibleNow = false;
-        this.nextPeek = this.randomInterval();
-        this.position.set(0, 100, 0);
-      }
-    }
-    return null;
-  }
-}
 
