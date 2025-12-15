@@ -67,6 +67,7 @@ const dom = {
   noteText: document.getElementById('noteText'),
   closeNoteBtn: document.getElementById('closeNoteBtn'),
   body: document.getElementById('body'),
+  hint: document.getElementById('hint'),
 };
 
 
@@ -542,16 +543,23 @@ class Game {
       }
     }
 
-    if (this.input.interactRequested && closestDist <= CONFIG.interact.distance) {
-      this.input.consumeInteract();
-      if (closest instanceof inter_objs.InteractiveNote) {
-        this.noteInteraction(closest);
-      } else {
-        closest.onInteract();
+    if(closestDist <= CONFIG.interact.distance) {
+      if (this.input.interactRequested) {
+        this.input.consumeInteract();
+        if (closest instanceof inter_objs.InteractiveNote) {
+          this.noteInteraction(closest);
+        } else {
+          closest.onInteract();
+        }
       }
-    } else {
-      // Float the hint on screen
+      else {
+        dom.hint.textContent = closest.hint; // Set hint
+      }
     }
+    else {
+      dom.hint.textContent = ""; // Set the hint blank if no objects are nearby
+    }
+    
   }
 
 
