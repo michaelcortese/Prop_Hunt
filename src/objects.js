@@ -3,7 +3,7 @@ import { InteractiveCabinet, InteractiveDoor, InteractiveDrawer, InteractiveNote
 
 
 
-export function createHouse(w, h, d, t, floorMat, wallMat, frameMat, doorMat, handleMat, windowMat, isPrototype) {
+export function createHouse(w, h, d, t, floorMat, wallMat, frameMat, doorMat, handleMat, windowMat, couchMat, isPrototype) {
   const doorW = 1.5;
   const doorH = Math.min(h, 2.5);
 
@@ -52,14 +52,22 @@ export function createHouse(w, h, d, t, floorMat, wallMat, frameMat, doorMat, ha
   kitchen.obstacles.forEach(obj => obstacles.push(obj));
   kitchen.interactables.forEach(obj => interactables.push(obj));
 
+  // Create the dining Room
   const diningRoom = createDiningRoom(h, t, wallMat, frameMat, doorW, doorH);
   diningRoom.objects.forEach(obj => house.add(obj));
   diningRoom.obstacles.forEach(obj => obstacles.push(obj));
 
+  // Create the basement rooom
   const basementRoom = createBasementRoom(h, t, wallMat, frameMat, doorW, doorH, doorMat, handleMat);
   basementRoom.objects.forEach(obj => house.add(obj));
   basementRoom.obstacles.forEach(obj => obstacles.push(obj));
   basementRoom.interactables.forEach(obj => interactables.push(obj));
+
+  // Create the Living Room
+  const livingRoom = createLivingRoom(h, couchMat, wallMat, handleMat);
+  livingRoom.objects.forEach(obj => house.add(obj));
+  livingRoom.obstacles.forEach(obj => obstacles.push(obj));
+  livingRoom.interactables.forEach(obj => interactables.push(obj));
 
   // Create and place the notes
   // First Note is on a shelf in the fartest away door
@@ -478,17 +486,19 @@ export function createDiningRoom(h, t, wallMat, tableMat, doorW, doorH) {
   let objects = [];
   let obstacles = [];
 
-  const wall = new Wall({
-    x: 7, y: h / 2, z: -4, w: 6, h, t: t, mat: wallMat
+  const passage1 = new WallWithPassage({
+    x: 7, y: h / 2, z: -4, w: 6, h, t: t,
+    passageX:0, passageW: doorW, passsageH: 1,
+    wallMat: wallMat
 
   });
-  const passage = new WallWithPassage({
+  const passage2 = new WallWithPassage({
     x: 4, y: h / 2, z: -0.5, w: 7, h, t,
     passageX: -1, passageW: doorW, passageH: doorH,
     wallMat, rotationY: Math.PI / 2
   });
-  objects.push(wall, passage);
-  obstacles.push(wall, passage);
+  objects.push(passage1, passage2);
+  obstacles.push(passage1, passage2);
 
   const table = new Table({
     x: 7, y: 0, z: -2, w: 2, h: 1, d: 3,
@@ -574,6 +584,30 @@ export function createBasementRoom(h, t, wallMat, frameMat, doorW, doorH, doorMa
     objects.push(step);
     obstacles.push(step);
   }
+
+  return { objects, obstacles, interactables };
+}
+
+export function createLivingRoom(h, couchMat, tableMat, drawerMat, handleMat) {
+  let objects = [];
+  let obstacles = [];
+  let interactables = [];
+
+  const couch = new Couch({
+    x:9.3, y:0, z:-7, w:6, h:2, d:1.2, mat:couchMat, rotationY: -Math.PI/2
+  });
+  const table = new Table({
+    x:4, y:0, z:-8, w:1.5, h:1, d:3, mat:tableMat,
+  });
+  const drawer1 = new InteractiveDrawer({
+    x:3.1, y:0.75, z:-3.7, w:1.5, h:1.25, d:1.25, drawerMat, handleMat, rotationY:Math.PI
+  });
+  const drawer2 = new InteractiveDrawer({
+    x:1.6, y:0.75, z:-3.7, w:1.5, h:1.25, d:1.25, drawerMat, handleMat, rotationY:Math.PI
+  });
+  objects.push(couch, table, drawer1, drawer2);
+  obstacles.push(couch, table, drawer1, drawer2);
+  interactables.push(drawer1, drawer2);
 
   return { objects, obstacles, interactables };
 }
@@ -857,9 +891,10 @@ export class Table extends T.Group {
 }
 
 export class Couch extends T.Group {
-  constructor({ x, y, z, w, h, d, mat }) {
+  constructor({ x, y, z, w, h, d, mat, rotationY=0 }) {
     super();
     this.position.set(x, y, z);
+    this.rotation.y = rotationY;
 
     const base = new T.Mesh(new T.BoxGeometry(w, h / 2, d), mat);
     base.position.set(0, h / 4, 0);

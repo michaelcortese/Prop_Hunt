@@ -215,7 +215,7 @@ class Game {
     // Build the basic pieces of a house
     const house_pieces = objs.createHouse(
       houseWidth, houseHeight, houseDepth, wallThickness,
-      floorMat, wallMat, frameMat, doorMat, frameMat, windowMat,
+      floorMat, wallMat, frameMat, doorMat, frameMat, windowMat, furnitureMat,
       this.prototypeMode
     );
     house.add(house_pieces.house);
