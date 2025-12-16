@@ -174,8 +174,8 @@ export class InteractiveDrawer extends Interactable {
   initAudio(listener, buffer) {
     this.sound = new THREE.PositionalAudio(listener);
     this.sound.setBuffer(buffer);
-    this.sound.setRefDistance(1);
-    this.sound.setVolume(1.0);
+    this.sound.setRefDistance(10);
+    this.sound.setVolume(6.0);
     this.add(this.sound);
   }
 
@@ -219,8 +219,8 @@ export class InteractiveCabinet extends Interactable {
   initAudio(listener, buffer) {
     this.sound = new THREE.PositionalAudio(listener);
     this.sound.setBuffer(buffer);
-    this.sound.setRefDistance(1);
-    this.sound.setVolume(1.0);
+    this.sound.setRefDistance(10);
+    this.sound.setVolume(6.0);
     this.add(this.sound);
   }
 

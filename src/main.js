@@ -5,6 +5,7 @@ import * as inter_objs from './interactive.js';
 import { BasementDoor } from './interactive.js';
 import { createDirectionalLight, createPointLight } from './light.js';
 import * as objs from './objects.js';
+import { GLTFLoader } from '../CS559-Three/examples/jsm/loaders/GLTFLoader.js';
 
 
 // Print Async Error messages to the console
@@ -31,8 +32,8 @@ const CONFIG = {
     radius: 0.3, // collision radius for character
   },
   eye: {
-    intervalMin: 30, // seconds
-    intervalMax: 60,
+    intervalMin: 5, // seconds
+    intervalMax: 10,
     visibleDuration: 5, // seconds per peering
     sightDistance: 18,
     fov: T.MathUtils.degToRad(35),
@@ -189,6 +190,21 @@ class Game {
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
+    this.resetWorld().catch(err => {
+      console.error(err);
+    });
+
+    // Ensure AudioContext is resumed on user interaction
+    const resumeAudio = () => {
+      if (this.listener.context.state === 'suspended') {
+        this.listener.context.resume();
+      }
+      window.removeEventListener('click', resumeAudio);
+      window.removeEventListener('keydown', resumeAudio);
+    };
+    window.addEventListener('click', resumeAudio);
+    window.addEventListener('keydown', resumeAudio);
+
 
     this.loop();
   }
@@ -319,6 +335,54 @@ class Game {
     const skybox = new T.Mesh(skyGeometry, skyMaterial);
     skybox.renderOrder = -1000; // Render first
     this.scene.add(skybox);
+
+    // --- Evil Eye Implementation ---
+    const useFullMode = dom.fullModeCheckbox.checked;
+    let eyeModel = null;
+    let eyeTexture = null;
+
+    if (useFullMode) {
+      try {
+        const loader = new GLTFLoader();
+        // Load asynchronously
+        const gltf = await loader.loadAsync('assets/guarding_eye.glb');
+        eyeModel = gltf.scene;
+
+        // Ensure materials are set up correctly for the model
+        eyeModel.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+      } catch (err) {
+        console.error("Failed to load Eye GLB:", err);
+        // Fallback or just log error
+      }
+    } else {
+      // Load simple texture for placeholder eye if needed, or just use color
+      // For now, we'll let it use default white/color if texture is null
+      // eyeTexture = await loadTextureSafely('textures/eye_texture.jpg', 0xff0000, this.prototypeMode);
+    }
+
+    // Find all windows in the house to pass to the Eye
+    const windows = [];
+    house.traverse(child => {
+      if (child instanceof objs.Window) {
+        windows.push(child);
+      }
+    });
+
+    const giantEye = new objs.GiantEye({
+      texture: eyeTexture,
+      houseWindows: windows,
+      scene: this.scene,
+      getPlayerPos: () => this.camera.position,
+      getPlayerDir: () => new T.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion),
+      model: eyeModel,
+      config: CONFIG.eye
+    });
+    this.updateables.push(giantEye);
   }
 
   checkGrounded() {
@@ -346,7 +410,16 @@ class Game {
     const dt = Math.min(this.clock.getDelta(), 0.1); // Cap delta time for stability
 
     // Update interactables
-    for (const u of this.updateables) u.update(dt);
+    for (const u of this.updateables) {
+      const result = u.update(dt, this.obstacles);
+      if (result === 'spotted') {
+        this.showOverlay("YOU WERE CAUGHT!");
+        return; // Stop the loop? Or just show overlay?
+        // Typically we might want to pause or wait for restart.
+        // For now, let's just show overlay and maybe let the loop continue but effectively game over.
+        // Actually, returning here stops the loop, which effectively pauses the game.
+      }
+    }
 
     // Player movement
     const speed = this.input.running ? CONFIG.player.speedRun : CONFIG.player.speedWalk;
