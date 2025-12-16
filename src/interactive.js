@@ -63,6 +63,10 @@ export class InteractiveNote extends Interactable {
     this.rotation.y = rotationY;
   }
 
+  setInvisible() {
+    this.noteObject.visible = false;
+  }
+
   update(dt) {
     if (!this.collected) {
       // Update shine shader time uniform if using shader

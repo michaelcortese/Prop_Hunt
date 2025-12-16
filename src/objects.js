@@ -3,7 +3,7 @@ import { InteractiveCabinet, InteractiveDoor, InteractiveDrawer, InteractiveNote
 
 
 
-export function createHouse(w, h, d, t, floorMat, wallMat, frameMat, doorMat, handleMat, windowMat) {
+export function createHouse(w, h, d, t, floorMat, wallMat, frameMat, doorMat, handleMat, windowMat, isPrototype) {
   const doorW = 1.5;
   const doorH = Math.min(h, 2.5);
 
@@ -61,13 +61,37 @@ export function createHouse(w, h, d, t, floorMat, wallMat, frameMat, doorMat, ha
   basementRoom.obstacles.forEach(obj => obstacles.push(obj));
   basementRoom.interactables.forEach(obj => interactables.push(obj));
 
-  // Create Door to the basement
-  // const basementDoor = new Door({
-  //     x: 0, y: doorH/2, z: -d/2 - t/2, w: doorW, h: doorH, t,
-  //     frameMat, doorMat, handleMat, rotationY: 0
-  // });
-  // house.add(basementDoor);
-  // obstacles.push(basementDoor.door, basementDoor.frameLeft, basementDoor.frameTop, basementDoor.frameRight);
+  // Create and place the notes
+  // First Note is on a shelf in the fartest away door
+  const note1 = new InteractiveNote({
+    passwordPiece: '26',
+    content: 'I found this note hidden on the old bookshelf.\nIndex: 1\nPassword piece: 26',
+    material: frameMat,
+    position: new T.Vector3(-2.3, 1.8, -6),
+    passwordIndex: 0,
+    useShineShader: !isPrototype,
+    rotationY: 0,
+  });
+  const note2 = new InteractiveNote({
+    passwordPiece: '43',
+    content: 'I found this note hidden in the bedroom closet\nIndex: 2\nPassword piece: 43',
+    material: frameMat,
+    position: new T.Vector3(-6, 1.5, 2.2),
+    passwordIndex: 1,
+    useShineShader: !isPrototype,
+    rotationY: Math.PI,
+  });
+  const note3 = new InteractiveNote({
+    passwordPiece: '91',
+    content: 'I found this note hidden in the kitchen cupboard\nIndex: 3\nPassword piece: 91',
+    material: frameMat,
+    position: new T.Vector3(9.6, 1.5, 6.2),
+    passwordIndex: 2,
+    useShineShader: !isPrototype,
+    rotationY: Math.PI/2,
+  });
+  house.add(note1, note2, note3);
+  interactables.push(note1, note2, note3);
 
   return { house, groundObjs, obstacles, interactables };
 }
@@ -363,18 +387,6 @@ export function createBedroomFurniture(mattressMat, frameMat) {
 
   objects.push(bookShelf1, bookShelf2, bookShelf3, bookShelf4, bookShelf5, bookShelf6);
   obstacles.push(bookShelf1, bookShelf2, bookShelf3, bookShelf4, bookShelf5, bookShelf6);
-
-  // Place a Note on one of the shelves
-  const note = new InteractiveNote({
-    passwordPiece: '12',
-    passwordIndex: 0,
-    content: 'I found this note hidden behind the old bookshelf.\n\nPassword piece: 12',
-    material: frameMat,
-    position: new T.Vector3(-2.3, 1.8, -6),
-    rotationY: Math.PI,
-  });
-  objects.push(note);
-  interactables.push(note);
 
   // Create Dressers
   const dresser1 = new InteractiveCabinet({

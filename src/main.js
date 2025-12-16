@@ -38,7 +38,7 @@ const CONFIG = {
     fov: T.MathUtils.degToRad(35),
   },
   interact: {
-    distance: 2.5, // Increased interaction distance
+    distance: 1.5, // Increased interaction distance
   },
   world: {
     gravity: -15.0, // gravity acceleration
@@ -132,19 +132,6 @@ class Game {
 
     // UI
     dom.fullModeCheckbox.addEventListener('change', () => {
-      const wasPrototypeMode = this.prototypeMode;
-      this.prototypeMode = !dom.fullModeCheckbox.checked;
-
-      // Update note shaders without resetting world
-      if (wasPrototypeMode !== this.prototypeMode) {
-        const useShine = !this.prototypeMode; // Shine in full mode (not prototype)
-        this.interactables.forEach(item => {
-          if (item instanceof Note) {
-            item.setShineShader(useShine);
-          }
-        });
-      }
-
       // Only reset world if needed (for now, keep it simple and reset)
       this.resetWorld();
     });
@@ -228,7 +215,8 @@ class Game {
     // Build the basic pieces of a house
     const house_pieces = objs.createHouse(
       houseWidth, houseHeight, houseDepth, wallThickness,
-      floorMat, wallMat, frameMat, doorMat, frameMat, windowMat
+      floorMat, wallMat, frameMat, doorMat, frameMat, windowMat,
+      this.prototypeMode
     );
     house.add(house_pieces.house);
     house_pieces.groundObjs.forEach(obj => { this.groundObjects.push(obj) });
@@ -284,43 +272,6 @@ class Game {
     const skybox = new T.Mesh(skyGeometry, skyMaterial);
     skybox.renderOrder = -1000; // Render first
     this.scene.add(skybox);
-
-    // Place 3 notes in good hiding spots inside the house
-    // passwordIndex determines the position in the final password (0 = first, 1 = second, 2 = third)
-    const notes = [
-      {
-        passwordPiece: '12',
-        passwordIndex: 0, // First position in password
-        content: 'I found this note hidden behind the old bookshelf.\n\nPassword piece: 12',
-        position: new T.Vector3(0, 1, -2) // Center
-      },
-      {
-        passwordPiece: '34',
-        passwordIndex: 1, // Second position in password
-        content: 'This was tucked under a loose floorboard.\n\nPassword piece: 34',
-        position: new T.Vector3(2, 1, -2) // Right
-      },
-      {
-        passwordPiece: '56',
-        passwordIndex: 2, // Third position in password
-        content: 'Hidden in a crack in the wall.\n\nPassword piece: 56',
-        position: new T.Vector3(-2, 1, -2) // Left
-      }
-    ];
-
-    for (const noteData of notes) {
-      const note = new inter_objs.InteractiveNote({
-        passwordPiece: noteData.passwordPiece,
-        passwordIndex: noteData.passwordIndex,
-        content: noteData.content,
-        material: noteMat,
-        position: noteData.position,
-        useShineShader: !this.prototypeMode // Use shine shader in full mode
-      });
-      this.scene.add(note);
-      this.interactables.push(note);
-      this.updateables.push(note); // Add to updateables for animation
-    }
   }
 
   checkGrounded() {
@@ -534,7 +485,8 @@ class Game {
 
     // Find closest interactable within horizontal (x,z) distance
     for (const interactable of this.interactables) {
-      const dist = playerPos.distanceTo(interactable.position);
+      let dist = playerPos.distanceTo(interactable.position);
+      // if(interactable instanceof inter_objs.InteractiveNote) { dist = 0.9*dist; }
 
       if (dist < closestDist) {
         closestDist = dist;
@@ -573,7 +525,7 @@ class Game {
       note.collected = true;
       // Store password piece at its fixed index position
       this.passwordPieces.set(note.passwordIndex, note.passwordPiece);
-      this.scene.remove(note);
+      note.setInvisible();
       this.interactables = this.interactables.filter(obj => obj !== note);
       this.updateables = this.updateables.filter(obj => obj !== note);
       // Update UI - display password in correct order (indices 0, 1, 2)
